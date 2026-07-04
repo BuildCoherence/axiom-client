@@ -42,6 +42,14 @@ By default, `Axiom.Actual` has no semantics. We recommend users adopt `LogicIsAc
 
 Users are free to extend the actuality operator with a full modal logic theory.
 
+When drafting, decide `A`-wrapping with this test: **would the user hold the premises as `A`-wrapped User Axioms?** If
+so, the user-facing theorem must consume `A`-wrapped premises and conclude `A (…)` — typically
+`theorem t (logic_is_actual : LogicIsActual) (p₁ : A P₁) … : A C` (the full example below ends in exactly this shape).
+Content about real-world entities — anything defined by semantic strings over BFO universals — is contingent; only
+mathematical or structural content stays bare. A bare-implication theorem about the real world is not wrong, but it
+cannot match anyone's `A`-wrapped Holdings, so on its own it does not do the job the user usually wants. Calling an
+argument "structural" or a "reusable argument shape" does not exempt it — when in doubt, write the `A`-form.
+
 ## Ontology
 
 Axiom's ontological theory recommendation is to adopt `axiom bfo : A BFO` (`ref: bfo`) and then use the macro library
@@ -53,6 +61,22 @@ mirrors how BFO and other formal ontologies are encoded in KIF/CLIF.
 
 To make this single-sorted approach more ergonomic in Lean, you should use the `ref: universals-and-relations` library
 to define domain classes and relationships.
+
+Two rules cover most drafting decisions, and both are violated most often by reverting to generic Lean habits:
+
+- **Kinds are universals, never bare types.** If English quantifies over it ("all persons", "every murder"), declare it
+  with `universal` or `rigid universal`. Writing `def Person : Type := "person"` creates a new Lean sort — exactly the
+  multi-sorted shape this ontology rejects — and nothing ties it to `InstanceOf`, so BFO's axioms say nothing about its
+  terms. Bare `def x : Type := "…"` is reserved for **particulars** (this person, this murder), as in the second example
+  below.
+- **Predicates and relations over universals go through `relation`.** A raw coercion like
+  `def HasBadIntent : Person → Prop := "has bad intent"` elaborates fine, but a semantic string's identity includes its
+  target type, and the conventional identity of a relation payload is the raw single-sorted signature
+  (`Type → … → Prop`) the macro produces. The same words typed at an ad-hoc signature are a _different kernel concept_ —
+  your "has bad intent" will not be the "has bad intent" the rest of the corpus reasons about, and no theorem or index
+  rule can merge them after the fact. The macro also carries the classification constraints (`Person.Is …`) alongside
+  the payload for you. Reach for raw string-to-`Prop` coercions only outside the macro library's domain (see _Semantic
+  strings_ below).
 
 Here is an example (see `ref: child-murder-punishment` for the full example):
 
@@ -90,13 +114,16 @@ def ChildMurderDeservesGreaterPunishmentThanNonChildMurder : Prop :=
       GreaterPunishmentThan mc1.punishment mc2.punishment
 ```
 
-Behind the scenes, these macros define a `Subtype` over `Type` and adds coercions and other helper functions. The
-difference between `rigid universal` and plain `universal` is particularly important to get right. Defining a
-`rigid universal` allows you do e.g. `(person : Person)` because a `Person` term is an `InstanceOf` the `Person.U`
-universal at all times, but a plain `universal` is only guarenteed to be an instance of that universal at some time. If
-you need more details, inspect the macros in the fetched `ref: universals-and-relations` file.
+Behind the scenes, these macros expand to plain definitions over a small set of shared classification classes, so a
+declaration is identified by its content — not by the file that made it. The difference between `rigid universal` and
+plain `universal` is particularly important to get right. A `rigid universal` additionally defines a `Subtype`, which is
+what allows e.g. `(person : Person)`: a `Person` term is an `InstanceOf` the `Person.U` universal at all times, but a
+plain `universal` is only guaranteed to be an instance of that universal at some time. A `relation` expands to a
+conjunction of classification constraints and the semantic-string payload, with `.inst0` / `.inst1` / …, `.relation`,
+and `.mk` helpers. If you need more details, inspect the macros in the fetched `ref: universals-and-relations` file.
 
-These declarations can then be used in actual situations:
+These declarations can then be used in actual situations. Particulars are the one place a bare semantic-string `Type` is
+correct:
 
 ```lean
 def Murderer : Type := "The Marjory Stoneman Douglas High School shooter"
@@ -156,6 +183,13 @@ Utilizing Semantic Strings enables definitions to evolve over time as users defi
 `opaque` declarations typically fulfill this role, but `opaque` and `axiom` declarations are not allowed in Axiom, so
 Semantic Strings should be used instead.
 
+This is a license to use semantic strings when constructive definitions are impractical or impossible — not a license to
+skip the ontology macros: within the BFO conventions, semantic strings enter through `universal` and `relation`
+declarations, which take one as their right-hand side.
+
+The rule of thumb with semantic strings is that they allow you to be loose with what _term_ you are referencing, but you
+must still be rigorous and principled with the _type_ you are referencing.
+
 ## Semantic strings
 
 Semantic strings allow users to refer to concepts by name, using English-flavored string literals that coerce to typed
@@ -171,12 +205,49 @@ Because identical `(α, s)` pairs resolve to the same kernel-level opaque consta
 axioms to the same semantic concept. This allows meanings to be cooperatively and incrementally constrained over time
 without requiring upfront coordination or shared imports.
 
-The ontological examples above rely heavily on them, but you can also use them outside of those macros by having a
-String coerce to some other type (e.g. `("is red" : Apple → Prop)` or `("Sam Cymbaluk" : Type)`).
+The ontological examples above rely heavily on them — every `universal` and `relation` takes a semantic string as its
+right-hand side, and particulars are semantic strings coerced to `Type`. A String can also coerce directly to other
+target types (e.g. `("is red" : Apple → Prop)`), but when the BFO conventions are in play, declare predicates with
+`relation` rather than raw coercions (see _Ontology_ above).
+
+The rule of thumb: semantic strings allow you to be loose with what _term_ you are referencing, but you must still be
+rigorous and principled with the _type_ you are referencing — the target type is part of the concept's identity, so the
+same string at two types is two concepts.
 
 By convention, Semantic strings do not capitalize the beginning of a sentence, but do contain capital letters for proper
 nouns. Punctuation can be part of a semantic string, but periods are omitted for single sentences, and semantic strings
 with multiple sentences are generally a smell.
+
+## Indexicals
+
+A `Prop` is a shared, user-independent object: identical `(type, string)` pairs resolve to the same kernel constant, so
+another user writing `("I endorse Axiom" : Prop)` refers to the same proposition you did, not one rebound to them. The
+User Axiom wrapper attributes the _act of committing_, never the referents inside the string. Indexicals — "I", "me",
+"my", "here", "now", "today", bare present tense — therefore cannot be discharged by a plain `Prop`.
+
+Before typing a claim as a `Prop`, resolve its indexicals to explicit referents: the user's identity via `axm whoami`
+("the Axiom user sam publicly endorses Axiom"), absolute dates for "now" / "today", named places for "here". If the user
+wants to keep the first-person phrasing, keep the payload a `String` and publish it as a Statement — a string leaves the
+meaning open so semantics can be layered later at whatever type fits (see `axiomlib-surface`).
+
+Alternatively, discharge the indexicals with a function type instead of rewording them away. In a string typed at a
+function type, "I" no longer refers to the author — it marks an argument slot — so the referent is supplied by
+application rather than baked into the proposition:
+
+```lean
+def Sam : Type := "the Axiom user sam"
+
+relation PubliclyEndorsesAxiom : Type := "I publicly endorse Axiom"
+
+def SamPubliclyEndorsesAxiom : Prop := PubliclyEndorsesAxiom Sam
+```
+
+Each remaining indexical gets its own parameter — "now" a time argument, "here" a place argument — and the fully applied
+result is an ordinary indexical-free `Prop`. This is the rule of thumb above in action: the term stays loose and
+first-person; the type carries the rigor. The move is type-level, so it works for any function-typed semantic string,
+but spell it with `relation` per _Ontology_ above. When the argument is a classified kind, use the universal as the slot
+(`relation PubliclyEndorsesAxiom : Person := "I publicly endorse Axiom"`) — the payload keeps the same raw single-sorted
+identity either way, so tightening the slot later adds classification without minting a new concept.
 
 ## Notation
 
@@ -235,6 +306,22 @@ The `axm` CLI has a rich search functionality. Before attempting to formalize so
 search Axiom for files that already formalize something similar. This allows you to either reuse existing code that fits
 your use case or fork something that is close but not exactly right. You shouldn't fork something just to fork
 something. It often makes sense to start from scratch.
+
+What counts as reuse differs by kind of content:
+
+- **Macro one-liners share by redeclaration.** `universal`, `rigid universal`, and `relation` declarations are
+  identified by their content — the semantic string (or term), the modifiers (`rigid`, the `extends` parent), and the
+  argument slots. Two files containing the same line define definitionally equal predicates: a theorem phrased over one
+  applies directly to content phrased over the other. Never fetch or import a file just to obtain a one-line declaration
+  — search for the conventional phrasing and write the same line locally. Here, search is for **alignment**: convergence
+  is exact-match, so a slightly different string, a different parent, or different slots is a different concept.
+- **Everything whose identity is its declaration shares by import.** `structure` bundles (like `MurderCase`),
+  constructive `def`s, theorems, notation, and bundles like `LogicIsActual` are per-file: to build on them — or to adopt
+  someone's syntax — `axm fetch` the file and `import A.<id>` / `open` it.
+
+One current caveat: the index still keys some positions per-file, so redeclared vocabulary can surface as separate
+proposition pages with separate adopter counts until a planned identity tightening ships. Kernel-level equivalence is
+immediate either way; import the original file if pooling those counts matters today.
 
 ## Externally authored lean
 

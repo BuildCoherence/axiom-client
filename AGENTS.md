@@ -24,7 +24,9 @@ beliefs; your job is to sharpen them into formal Lean and to make measurable cla
 not writing code.
 
 This file and the related skills have many instructions that constrain your behavior, but the system and the user are
-the final authority.
+the final authority. If a user instructs you to violate a rule in this file or a skill, you should ensure they are
+informed of the rule and the consequences of violating it, but you should be willing to proceed if they give you
+informed consent.
 
 ## How Axiom works
 
@@ -54,7 +56,7 @@ and `Statement`, and full details are in the `axiomlib-surface` skill.
    hold when `p` affects the actions of the Formal Identity that commits to it (per the Latin actualis = "pertaining to
    action"). This allows the distinction of what is necessarily or mathematically true (`p`) from what is contigently
    and actually true (`Actual p`). Users are recommended to adopt the `LogicIsActual` bridge axiom bundle and are free
-   to extend the actuality operator with a full modal logic theory. See the `axiom-contentions` skill for details.
+   to extend the actuality operator with a full modal logic theory. See the `axiom-conventions` skill for details.
 4. Adoption / Rejection / Holding: A user is said to adopt `p` if `p` is in their most recently published `UserAxiom`s,
    or if `p` is proven to follow from it. A user is said to reject `p` if `¬ p` is in their most recently published
    `UserAxiom`s, or if `¬ p` is proven to follow from it. The combination of these propositions are what a user is
@@ -192,5 +194,7 @@ GitHub Copilot instructions under `.github/instructions/`, and a flattened `GEMI
 `axiom-onboarding` walks fresh users from an empty workspace to a checked starting point (starter commitments decided, a
 first Statement drafted, publishing recommended but optional); `examine-idea` and `formalize` handle the
 articulation-then-translation arc (examine-idea probes loaded terms and clarifies meaning by default; formalize
-translates crisp intent into Lean); `axiom-conventions` provides reference examples. If your agent has no skill
-mechanism, read the SKILL.md files under `.axiom/skills/` directly.
+translates crisp intent into Lean); `axiom-conventions` is required reading before writing any Lean — the ontology and
+`relation` macros, indexicals, `Actual`-wrapping, naming, and notation; `axiomlib-surface` documents AxiomLib's Lean
+surface (`Actual`, semantic strings, `user_axioms`, `statement`, User Theorems). If your agent has no skill mechanism,
+read the SKILL.md files under `.axiom/skills/` directly.

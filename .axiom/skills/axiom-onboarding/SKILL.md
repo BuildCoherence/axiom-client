@@ -206,9 +206,11 @@ statement welcome := "I'm excited to start using Axiom"
 ```
 
 Rationale (share it if the user asks why): indexicals — "I", present tense — cannot be discharged by a plain `Prop`. A
-string payload keeps the meaning open, so semantics can be layered later at whatever type actually fits, e.g. the same
-string literal given semantics as a `Person → Time → Prop`. Typing the payload as a `Prop` up front forces the meaning
-into a shape that can't accommodate that.
+string payload keeps the meaning open, so semantics can be layered later at whatever shape actually fits — e.g. the same
+string later given semantics as a `relation` with slots for the speaker and the time. Typing the payload as a `Prop` up
+front forces the meaning into a shape that can't accommodate that. This is a general rule, not a Statement-only one —
+the Indexicals section of `axiom-conventions` covers how first-person claims become `Prop`s (resolve the indexicals to
+explicit referents, or discharge them as `relation` argument slots).
 
 Phrase the content in the user's voice and ask them to refine it before moving on.
 

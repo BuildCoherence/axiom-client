@@ -6,7 +6,8 @@ description: Use when the user has crisp(-enough) intent to translate something 
 # Formalize
 
 The user has something to translate into Lean. This skill orchestrates the translation: confirm the conceptual kind,
-look up the Lean shape, place the file, draft, show, and offer next steps.
+look up the Lean shape, place the file, re-ground in conventions, state the intended shape, draft, check, and offer next
+steps.
 
 This skill is intentionally thin. The kind taxonomy (User Axiom / User Theorem / Statement / opaque / semantic string /
 Bridge Axiom), the Lean templates, and the `Actual`-wrap guidance live in `axiomlib-surface` — `formalize` consults them
@@ -25,19 +26,36 @@ rather than restating. The `axiom-conventions` skill is required reading before 
    string predicate), or supporting infrastructure for one of the above? Skip the question if the kind is obvious.
 
 2. **Look up the Lean shape.** Consult `axiomlib-surface` for the form matching the conceptual kind, including the
-   `Actual`-wrap convention (contingent commitments are `Actual`-wrapped; structural or necessary content is bare).
+   `Actual`-wrap convention (contingent commitments are `Actual`-wrapped; structural or necessary content is bare —
+   apply the Actuality test in `axiom-conventions` when classifying).
 
 3. **Search for prior art.** The `axm` CLI has a rich search functionality. Before attempting to formalize something, it
    is the best practice to search Axiom for files that already formalize something similar. This allows you to either
    reuse existing code that fits your use case or fork something that is close but not exactly right. You shouldn't fork
    something just to fork something. It often makes sense to start from scratch.
 
+   For `universal` / `rigid universal` / `relation` one-liners, prior art is for **alignment**, not import: copy the
+   conventional line into your file rather than fetching its file. Import what identity actually requires — structures,
+   theorems, notation, bundles. See _Identify prior art_ in `axiom-conventions`.
+
 4. **Place the file.**
    - **User Axiom** → `Axioms.lean`, inside the `user_axioms { … }` block.
    - **Everything else** (User Theorem, Statement, opaque type, semantic string definition, supporting `def`) →
      `Workspace/<descriptive-name>.lean`.
 
-5. **Draft.** Use the relevant template from `axiomlib-surface`. Apply naming per `axiom-conventions` (PascalCase for
+5. **Re-ground immediately before drafting.** Do not draft from memory of an earlier read — long gaps between reading
+   `axiom-conventions` and applying it are where drafts silently revert to generic Lean (fresh sorts, raw `def`
+   predicates, bare implications). Re-open `axiom-conventions` (at minimum its Ontology, Semantic strings, Indexicals,
+   and Actuality sections) unless you read it after this formalization began. For ontological content, also fetch and
+   study at least one exemplar from `axm modeling-refs` (e.g. `ref: child-murder-punishment`); the machinery refs alone
+   do not anchor the idiom.
+
+6. **State the target shape before writing the file.** In a few lines, tell the user what you intend to declare — which
+   universals (`universal` vs `rigid universal`), which `relation`s, which particulars, which named `Prop`s, and what
+   gets `A`-wrapped — and confirm it matches what they meant. This show-and-ask beat happens before the file exists, not
+   after.
+
+7. **Draft.** Use the relevant template from `axiomlib-surface`. Apply naming per `axiom-conventions` (PascalCase for
    types, files, and namespaces; camelCase for terms; snake_case for proofs and axioms). When defining operators so
    propositions read naturally, follow the Notation section of `axiom-conventions`. For a **User Theorem**,
    `axiomlib-surface` also describes how leading `Prop` hypotheses match a snapshot's axioms — consult it.
@@ -48,10 +66,22 @@ rather than restating. The `axiom-conventions` skill is required reading before 
    toward your theorem. An open-binder theorem still publishes, but it is **not adoptable**: it carries no premise
    matching and no adoption. Close your binders wherever the statement allows it.
 
-6. **Show and ask.** Present the draft. Ask whether it matches what the user meant.
+8. **Check against conventions, then against tooling.** First verify the draft by eye against `axiom-conventions`:
+   - every kind is declared with `universal` / `rigid universal` — no `def X : Type := "…"` for anything English
+     quantifies over;
+   - every predicate or relation over universals uses the `relation` macro — no raw `def … : … → Prop := "…"`;
+   - contingent real-world content is `A`-wrapped, premises and conclusion, per the Actuality test in
+     `axiom-conventions`;
+   - no indexicals ("I", "now", "here") remain inside `Prop`-typed semantic strings;
+   - naming and notation follow `axiom-conventions`.
 
-7. **Recommend next steps.** `axm check --basic` for fast local feedback, then `axm check` for the full server-side
-   validation pipeline, then `axm publish` when ready. Publishing is a public commitment — the user decides when.
+   Only then run `axm check --basic` for fast local feedback and `axm check` for the full server-side validation
+   pipeline. The checks validate elaboration, not conventions — semantic strings coerce to almost anything, so a draft
+   violating every rule above can still pass both. Passing checks is necessary; it is never evidence the shape is right.
+
+9. **Show the draft.** Present it and ask whether it matches what the user meant.
+
+10. **Recommend next steps.** `axm publish` when ready. Publishing is a public commitment — the user decides when.
 
 ## Pivot to examine-idea posture
 
