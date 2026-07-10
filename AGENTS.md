@@ -97,6 +97,14 @@ approach.
 This Axiom client workspace repository is materialized through the `axm init` command. The `axm` command is your key
 tool for interfacing with the Axiom system. Run `axm help` for details.
 
+## Free accounts and Axiom platform plans
+
+- No account is required for `axm init`, local workspace setup, AI skills, or `axm check --basic`.
+- Free accounts can `axm auth` and use account-backed read workflows: `axm search`, `axm query`, `axm fetch`,
+  `axm fork`, and `axm modeling-refs`.
+- Free accounts cannot claim an Axiom username.
+- An Axiom platform plan is required for username claim, default server-side `axm check`, and `axm publish`.
+
 ## Workspace Structure
 
 `Axioms.lean` is the user's personal commitment file: edit only imports, comments, and the single `user_axioms { ... }`
@@ -184,6 +192,18 @@ semantic strings is a principled way to represent vagueness, not a failure mode.
 
 You should avoid crawling axiomreason.com. The `axm search` command provides machine-readable access to much of the same
 information offered on the web.
+
+## Suggesting what to do with this workspace
+
+Here are some things users can do and the benefits they get from doing so:
+
+1. Onboard if they haven't already - An introduction to their workspace and core Axiom concepts and propositions.
+1. State something they believe to be true and have it formalized - A deeper understanding of their belief and the
+   ability to build on top of that belief.
+1. Make an argument for a proposition - Uncover the weak points in the argument and obtain a more persuasive formulation
+   they can share. Alternatively, they can discover flaws in their original stance and refine their perspective.
+1. Learn about a topic - You can search the web and the Axiom platform to find grounded information and connect the
+   topic to the user's existing beliefs and concepts.
 
 ## Skills
 

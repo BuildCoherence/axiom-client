@@ -1,3 +1,15 @@
 /.lake
 .DS_Store
-.axiomdata/
+# `.axiomdata/` is per-clone machine-generated state and stays untracked —
+# except `files/A/.gitkeep`, tracked so the `Env` lib's glob directory
+# exists in a fresh clone (a bare `lake build` errors on a missing glob
+# directory; see lakefile.lean). The leading `!.axiomdata/` un-ignores the
+# directory itself so the re-includes below also work when this template
+# lives inside the monorepo, whose root .gitignore excludes `.axiomdata`.
+!.axiomdata/
+.axiomdata/*
+!.axiomdata/files/
+.axiomdata/files/*
+!.axiomdata/files/A/
+.axiomdata/files/A/*
+!.axiomdata/files/A/.gitkeep
