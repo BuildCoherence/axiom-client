@@ -5,8 +5,8 @@ open System
 package axiomClient where
   leanOptions := #[⟨`autoImplicit, false⟩]
 
-  version := v!"1.1.2-beta"
-require AxiomLib from git "https://github.com/BuildCoherence/axiom-lib" @ "v1.0.1-beta"
+  version := v!"1.1.3-beta"
+require AxiomLib from git "https://github.com/BuildCoherence/axiom-lib" @ "v1.0.2-beta"
 
 -- Both libraries are default targets: a bare `lake build` is what the CLI's
 -- remediation messages (`axm init` pre-warm failure, `axm upgrade`) and the

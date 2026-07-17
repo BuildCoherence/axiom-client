@@ -60,9 +60,11 @@ Five commitments, installed as two `user_axioms` entries:
 ```lean
 user_axioms {
   axiom logic_is_actual : LogicIsActual
-  axiom bfo : A BFO.BFO
+  axiom bfo : A BFO
 }
 ```
+
+(`BFO` here is the fetched bfo file's top-level abbrev, so `Axioms.lean` needs that file id in its `open` line.)
 
 `LogicIsActual` is the Classical Bridge Bundle — a `structure … : Prop` whose four fields are the classical Bridge
 Axioms. Adopting the bundle as one entry is the convention; it is structurally unwrapped into per-field Holdings, so it
@@ -74,7 +76,8 @@ is equivalent to holding each field individually. The fields (prose names in par
 4. `idempotency : ∀ p : Prop, Actual p = Actual (Actual p)` (idempotence — not the elimination `Actual p → p`, which the
    bundle deliberately omits so actuality never collapses into necessity)
 
-`A` is notation for `Actual`. `BFO.BFO` is the Basic Formal Ontology adoption term.
+`A` is notation for `Actual`. `BFO` (a top-level abbrev in the fetched `ref: bfo` file) is the Basic Formal Ontology
+adoption term.
 
 ### Installation mechanics
 
@@ -83,17 +86,19 @@ is equivalent to holding each field individually. The fields (prose names in par
 2. **Read the fetched files. They are the source of truth** for exact declarations, field names, and types — the
    snippets in this skill orient you, but if they disagree with fetched content, the fetched content wins (the bundle
    has grown fields before).
-3. Edit `Axioms.lean`: add the `import A.<id>` lines, the `open` for the `A` notation, and the accepted entries inside
-   `user_axioms { }`. Offer a one-line comment above each entry in the user's own words; skip if they prefer bare.
+3. Edit `Axioms.lean`: add the `import A.<id>` lines, the `open`s (the `A`-notation file id, and the bfo file id so
+   `BFO` resolves unqualified), and the accepted entries inside `user_axioms { }`. Offer a one-line comment above each
+   entry in the user's own words; skip if they prefer bare.
 4. Run `axm check --basic` for fast local feedback, then full `axm check`.
 
 ### Partial installs (long path)
 
 If the user accepts all four bundle fields, install the single `logic_is_actual : LogicIsActual` entry. If they decline
-any field, install the accepted fields as individual axioms instead, copying each proposition **exactly** from the
-fetched bundle file — exact propositions merge with bundle-holders' unwrapped Holdings, so a partial install still
-participates fully in shared Holdings. Note to the user that this departs from the labeled-record convention
-cosmetically and can be consolidated later by re-publishing `Axioms.lean` with the bundle.
+any field, install the accepted fields as individual axioms instead, preserving a proposition **definitionally equal**
+to the fetched bundle field — definitionally equal propositions merge with bundle-holders' unwrapped Holdings, so a
+partial install still participates fully in shared Holdings. Copying the fetched proposition is the simplest way to
+preserve that equivalence, but token-for-token source identity is not required. Note to the user that this departs from
+the labeled-record convention cosmetically and can be consolidated later by re-publishing `Axioms.lean` with the bundle.
 
 If the user wants to _modify_ an item or design a different bridge posture (intuitionist, paraconsistent, …), that is
 real authoring work: hand off to `examine-idea` / `formalize` rather than improvising it inline.

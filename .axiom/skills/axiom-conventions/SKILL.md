@@ -62,6 +62,16 @@ mirrors how BFO and other formal ontologies are encoded in KIF/CLIF.
 To make this single-sorted approach more ergonomic in Lean, you should use the `ref: universals-and-relations` library
 to define domain classes and relationships.
 
+Adopting the pair is two `open` lines at the top of a file, after `axm fetch`ing both refs:
+`open scoped <universals-and-relations file id>` activates the `universal` / `rigid universal` / `relation` commands
+without bringing any names into scope, and `open <bfo file id>` brings the BFO universal names and their classification
+instances into scope in one step. Declarations can sit at the top level of the file — no wrapping namespace is needed;
+wrap content in a namespace only when you want a qualified naming prefix on your published declarations. (While
+authoring locally, macro-emitted instances at the top level are globally active within your own workspace; the publish
+transform's file-id wrapper makes the same lines emit `scoped`, so activation in the published corpus is always by
+`open`.) If two opened files declare the same name, unqualified term-position uses error as ambiguous — even when the
+declarations are definitionally equal; open only one, or qualify.
+
 Two rules cover most drafting decisions, and both are violated most often by reverting to generic Lean habits:
 
 - **Kinds are universals, never bare types.** If English quantifies over it ("all persons", "every murder"), declare it
@@ -103,7 +113,7 @@ structure MurderCase where
     DeservesPunishmentFor murderer murder punishment
 
 def VictimIsChild (mc : MurderCase) :=
-  ∃ t, Child.At mc.victim t ∧ ProcessOccupiesTemporalRegion mc.murder t
+  ∃ t, Child.At mc.victim t ∧ OccupiesTemporalRegion mc.murder t
 
 def SameNonVictimAgeCircumstances (mc1 mc2 : MurderCase) :=
   (NonAgePunishmentRelevantCircumstances mc1.murder) ↔ (NonAgePunishmentRelevantCircumstances mc2.murder)
@@ -122,6 +132,19 @@ plain `universal` is only guaranteed to be an instance of that universal at some
 conjunction of classification constraints and the semantic-string payload, with `.inst0` / `.inst1` / …, `.relation`,
 and `.mk` helpers. If you need more details, inspect the macros in the fetched `ref: universals-and-relations` file.
 
+The `ref: bfo` file declares the full BFO vocabulary in exactly this idiom: every BFO universal as a `rigid universal`
+and every BFO relation as a `relation` whose slots are the weakest covering universal of BFO's official domain and range
+(`OccupiesTemporalRegion : Occurrent → TemporalRegion`, `ParticipatesIn : Continuant → Process → TemporalRegion`,
+`ContinuantPartOf : Continuant → Continuant → TemporalRegion`, …). The exact domain/range constraints remain enforced by
+the adopted BFO axioms (`A BFO`), so BFO relations are stated and consumed exactly like your own `relation` declarations
+— including the `.inst*` accessors and `.mk` constructors.
+
+CXI reduces definition bodies deeply before computing proposition identity. Plain `def`, `abbrev`, `@[reducible]`, and
+`@[irreducible]` declarations are therefore identity-transparent: definitionally equal propositions share one identity
+even when their source spelling differs. The identity-opaque boundary is kernel-level `opaque`/`axiom` constants and
+inductive, structure, or class types. Since user-authored `opaque` and `axiom` declarations are forbidden, use a
+single-field structure wrapper when you deliberately need a nominal identity boundary instead of a transparent alias.
+
 These declarations can then be used in actual situations. Particulars are the one place a bare semantic-string `Type` is
 correct:
 
@@ -139,26 +162,26 @@ def AdultCasePunishmentSpec : Type :=
 
 structure TwoConcreteMurderCases : Prop where
   child_case_involvement :
-    MurderInvolves ChildMurder ChildVictim Murderer
+    MurdersIn Murderer ChildVictim ChildMurder
   child_case_deserved_punishment :
-    DeservesPunishmentFor Murderer ChildCasePunishmentSpec ChildMurder
+    DeservesPunishmentFor Murderer ChildMurder ChildCasePunishmentSpec
   child_case_victim_is_child :
-    ∃ t, Child.At ChildVictim t ∧ ProcessOccupiesTemporalRegion ChildMurder t
+    ∃ t, Child.At ChildVictim t ∧ OccupiesTemporalRegion ChildMurder t
   non_child_case_involvement :
-    MurderInvolves AdultMurder AdultVictim Murderer
+    MurdersIn Murderer AdultVictim AdultMurder
   non_child_case_deserved_punishment :
-    DeservesPunishmentFor Murderer AdultCasePunishmentSpec AdultMurder
+    DeservesPunishmentFor Murderer AdultMurder AdultCasePunishmentSpec
   non_child_case_victim_is_not_child :
-    ¬ ∃ t, Child.At AdultVictim t ∧ ProcessOccupiesTemporalRegion AdultMurder t
+    ¬ ∃ t, Child.At AdultVictim t ∧ OccupiesTemporalRegion AdultMurder t
   same_non_victim_age_circumstances :
-    MurderCircumstancesRelevantToTheDeservedPunishmentOtherThanVictimAge ChildMurder ↔
-      MurderCircumstancesRelevantToTheDeservedPunishmentOtherThanVictimAge AdultMurder
+    NonAgePunishmentRelevantCircumstances ChildMurder ↔
+      NonAgePunishmentRelevantCircumstances AdultMurder
 
 theorem child_case_deserves_greater_punishment
     (logic_is_actual : LogicIsActual)
     (principle : A ChildMurderDeservesGreaterPunishmentThanNonChildMurder)
     (cases : A TwoConcreteMurderCases) :
-    A (IsGreaterPunishmentThan
+    A (GreaterPunishmentThan
       ChildCasePunishmentSpec
       AdultCasePunishmentSpec) := by ...
 ```
@@ -268,8 +291,10 @@ here are an interim safe subset; richer conventions are work in progress.
 - Derive the operator token from the concept's semantic string:
   `relation TallerThan : Person → Person := "is taller than"` pairs with `taller-than`.
 - Parenthesize infix propositions under `A` — write `A (x taller-than y)` — rather than relying on precedence.
-- Do not write `scoped` yourself; the publish transform promotes top-level notation automatically. If two opened files
-  define the same token, uses become ambiguous and error at the use site; resolve by opening only one of them.
+- At the top level of a file, do not write `scoped` yourself; the publish transform promotes top-level notation
+  automatically. Inside a namespace the transform does not reach: write `scoped infix:50 …` by hand there (Lean requires
+  the namespace for `scoped` anyway). If two opened files define the same token, uses become ambiguous and error at the
+  use site; resolve by opening only one of them.
 
 ## UserAxioms vs Statements
 
@@ -313,15 +338,12 @@ What counts as reuse differs by kind of content:
   identified by their content — the semantic string (or term), the modifiers (`rigid`, the `extends` parent), and the
   argument slots. Two files containing the same line define definitionally equal predicates: a theorem phrased over one
   applies directly to content phrased over the other. Never fetch or import a file just to obtain a one-line declaration
-  — search for the conventional phrasing and write the same line locally. Here, search is for **alignment**: convergence
-  is exact-match, so a slightly different string, a different parent, or different slots is a different concept.
+  — search for the conventional phrasing and write a definitionally equal line locally. Here, search is for
+  **alignment**: source text need not be token-for-token identical, but a different semantic string, parent, or argument
+  slot changes the elaborated proposition and therefore names a different concept.
 - **Everything whose identity is its declaration shares by import.** `structure` bundles (like `MurderCase`),
   constructive `def`s, theorems, notation, and bundles like `LogicIsActual` are per-file: to build on them — or to adopt
   someone's syntax — `axm fetch` the file and `import A.<id>` / `open` it.
-
-One current caveat: the index still keys some positions per-file, so redeclared vocabulary can surface as separate
-proposition pages with separate adopter counts until a planned identity tightening ships. Kernel-level equivalence is
-immediate either way; import the original file if pooling those counts matters today.
 
 ## Externally authored lean
 
